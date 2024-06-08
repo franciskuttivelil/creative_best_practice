@@ -8,7 +8,7 @@ from time import sleep
 import typing_extensions as typing
 
 
-GEMINI_API_KEY = "AIzaSyCW7zEgzAC2zxLCpY4fNdrppUjWnIrQNM0"
+GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
 
 ## Class that defines response json schema
