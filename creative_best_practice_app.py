@@ -6,6 +6,7 @@ from PIL import Image
 import google.generativeai as genai
 from time import sleep
 import typing_extensions as typing
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -20,11 +21,22 @@ class Analysis(typing.TypedDict):
 ## Function to load Gemini model and get respones
 
 def get_gemini_response(input,image):
-    model = genai.GenerativeModel('gemini-1.5-pro')
-    generation_config=genai.GenerationConfig(response_mime_type="application/json",
-                                           response_schema = list[Analysis])
+    generation_config = {
+                         "temperature": 1,
+                         "top_p": 0.95,
+                         "top_k": 64,
+                         "response_mime_type": "text/plain"
+                         }
+    model = genai.GenerativeModel(model_name = 'gemini-1.5-pro',
+                                  generation_config=generation_config)
+
+    safety_settings = {HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+                       HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+                       HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+                       HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE
+                       }
     response = model.generate_content([input,image[0]],
-                                      #generation_config=generation_config
+                                      safety_settings=safety_settings
                                       )
     return response.text
     
@@ -123,4 +135,6 @@ if submit:
             with col2:
                 st.header("Does the Ad Creative meet best practices?")
                 st.divider()
-                st.write(response)
+                with st.container(height=700,border=False):
+                    st.markdown(response)
+                #st.write(response)
