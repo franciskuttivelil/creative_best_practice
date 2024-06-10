@@ -82,10 +82,24 @@ def get_gemini_response(input,ad_creative):
     
 ##initialize our streamlit app
 st.set_page_config(page_title="Ad Creative Best Practices App", layout = "wide")
+st.html(
+"""
+<style>
+[data-testid="stSidebarContent"] {
+    color: white;
+    background-color: blue;
+}
+[data-testid="stWidgetLabel"] {
+    color: white;
+    background-color: blue;
+}
+</style>
+"""
+)
 
 ##create the sidebar
 with st.sidebar:
-    st.image("https://www.mcsaatchiperformance.com/wp-content/themes/mandcsaatchiperformance/assets/img/logo-upright.png", width = 300)
+    st.image("https://www.mcsaatchiperformance.com/wp-content/themes/mandcsaatchiperformance/assets/img/logo-upright.png")
     with st.form("inputs", border=False):
         st.divider()
         uploaded_file = st.file_uploader("Upload an Ad Creative", type=["jpg", "jpeg", "png","mp4"])
