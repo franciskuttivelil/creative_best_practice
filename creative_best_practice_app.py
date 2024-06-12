@@ -174,9 +174,6 @@ st.html(
     color: white;
     background-color: blue;
 }
-[data-testid="stFileDropzoneInstructions"] {
-    content: "xxxxxx";
-}
 [data-testid="stWidgetLabel"] {
     color: white;
     background-color: blue;
