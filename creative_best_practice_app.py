@@ -32,30 +32,32 @@ def get_thumbnail_from_video(uploaded_video_file):
 class PDF(FPDF):
 
     def footer(self):
+        __location__ = os.path.realpath(os.path.join(os.getcwd(),os.path.dirname(__file__)))
         self.set_y(-15)
-        self.set_font('Helvetica', 'I', 8)
+        self.set_font('Roboto', 'I', 8)
         self.set_text_color(128)
         self.cell(0, 10, 'Page ' + str(self.page_no()), 0, 0, 'C')
-        self.image(r"C:\MCSaatchiPerformance\workspace\genai\Small MCSP vertical logo.png",0.9*210,0.9*297,10,20)
+        self.image(os.path.join(__location__,'Small MCSP vertical logo.png'),0.9*210,0.9*297,10,20)
 
 def create_letterhead(pdf, WIDTH, HEIGHT):
-    pdf.image(r"C:\MCSaatchiPerformance\workspace\genai\MCSP Black_Horizontal-01.png", 0.25*WIDTH, 0.10*HEIGHT, 100, 50)
+    __location__ = os.path.realpath(os.path.join(os.getcwd(),os.path.dirname(__file__)))
+    pdf.image(os.path.join(__location__,'MCSP Black_Horizontal-01.png'), 0.25*WIDTH, 0.10*HEIGHT, 100, 50)
 
 def create_title(title, pdf, WIDTH,HEIGHT):
     
     # Add main title
-    pdf.set_font('Helvetica', 'b', 20)  
+    pdf.set_font('Roboto', 'b', 20)  
     pdf.set_xy(0.25*WIDTH,0.50*HEIGHT)
     pdf.cell(100,50,txt=title, align="C")
     pdf.ln(10)
     # Add date of report
-    pdf.set_font('Helvetica', '', 14)
+    pdf.set_font('Roboto', '', 14)
     pdf.set_x(0.25*WIDTH)
     pdf.cell(100,50,txt=f'{time.strftime("%d/%m/%Y")}', align="C")
     pdf.ln(10)
 
     #Add contact info
-    pdf.set_font('Helvetica', '', 14)
+    pdf.set_font('Roboto', '', 14)
     pdf.set_x(0.25*WIDTH)
     pdf.cell(100,50,txt='Email : dane.buchanan@mcsaatchiperformance.com', align="C")
     pdf.ln(10)
