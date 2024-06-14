@@ -10,9 +10,24 @@ import typing_extensions as typing
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 import tempfile
 from fpdf import FPDF
+import cv2
 
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
+
+def get_thumbnail_from_video(uploaded_video_file):
+    frame_number = 5
+    video_file_path = create_path_for_uploaded_file(uploaded_video_file)
+    cap = cv2.VideoCapture(video_file_path)
+    amount_of_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    if amount_of_frames > 5:
+        frame_number = 5
+    else:
+        frame_number = 1
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number-1)
+    res, frame = cap.read()
+
+    return Image.fromarray(frame)
 
 class PDF(FPDF):
 
@@ -45,13 +60,19 @@ def create_title(title, pdf, WIDTH,HEIGHT):
     pdf.cell(100,50,txt='Email : dane.buchanan@mcsaatchiperformance.com', align="C")
     pdf.ln(10)
 
-def write_to_pdf(words,uploaded_file):
-
+def write_to_pdf(download_pdf_ad_creatives_responses):
+    
     TITLE = "Ad Creative Best Practices Report"
     WIDTH = 210
     HEIGHT = 297
+
+    __location__ = os.path.realpath(os.path.join(os.getcwd(),os.path.dirname(__file__)))
     # Create PDF
     pdf = PDF() # A4 (210 by 297 mm)
+    pdf.add_font("Roboto", style="", fname=os.path.join(__location__, 'Roboto-Regular.ttf'))
+    pdf.add_font("Roboto", style="B", fname=os.path.join(__location__, 'Roboto-Bold.ttf'))
+    pdf.add_font("Roboto", style="I", fname=os.path.join(__location__, 'Roboto-Italic.ttf'))
+    pdf.add_font("Roboto", style="BI", fname=os.path.join(__location__, 'Roboto-BoldItalic.ttf'))
 
     #First Page of PDF
 
@@ -62,28 +83,34 @@ def write_to_pdf(words,uploaded_file):
     create_letterhead(pdf, WIDTH, HEIGHT)
     create_title(TITLE, pdf, WIDTH, HEIGHT)
     
-    # Set text colour, font size, and font type
-    pdf.set_font('Helvetica', 'b', 16)
-    pdf.set_margins(10,10)
-    pdf.add_page()
-    pdf.multi_cell(0.30*WIDTH,txt="Ad Creative", align="C")
-    pdf.set_xy(0.39*WIDTH,10)
-    pdf.multi_cell(0,txt="Does the Ad Creative meet best practices?", align="C")
-    pdf.set_xy(10,20)
-    pdf.line(10,20,0.35*WIDTH,20)
+    for download_pdf_ad_creatives_response in download_pdf_ad_creatives_responses:
 
-    if uploaded_file is not None:
-            uploaded_file_type = ((uploaded_file.type).split("/"))[0]
-            if uploaded_file_type == "image":
-                image = Image.open(uploaded_file)
+        uploaded_file = download_pdf_ad_creatives_response["uploaded_file"]
+        words = download_pdf_ad_creatives_response["response"]
+        # Set text colour, font size, and font type
+        pdf.set_font('Roboto', 'b', 16)
+        pdf.set_margins(10,10)
+        pdf.add_page()
+        pdf.multi_cell(0.30*WIDTH,txt="Ad Creative", align="C")
+        pdf.set_xy(0.39*WIDTH,10)
+        pdf.multi_cell(0,txt="Does the Ad Creative meet best practices?", align="C")
+        pdf.set_xy(10,20)
+        pdf.line(10,20,0.35*WIDTH,20)
 
-    pdf.set_xy(10,30)
-    pdf.image(image, w=0.30*WIDTH)
-    pdf.set_xy(0.40*WIDTH,20)
-    pdf.line(0.40*WIDTH,20,0.95*WIDTH,20)
-    pdf.set_xy(0.40*WIDTH,30)
-    pdf.set_font('Helvetica', '', 12)
-    pdf.multi_cell(0,txt=words,markdown=True,align="J")
+        if uploaded_file is not None:
+                uploaded_file_type = ((uploaded_file.type).split("/"))[0]
+                if uploaded_file_type == "image":
+                    image = Image.open(uploaded_file)
+                if uploaded_file_type == "video":
+                    image = get_thumbnail_from_video(uploaded_file)
+
+        pdf.set_xy(10,30)
+        pdf.image(image, w=0.30*WIDTH)
+        pdf.set_xy(0.40*WIDTH,20)
+        pdf.line(0.40*WIDTH,20,0.95*WIDTH,20)
+        pdf.set_xy(0.40*WIDTH,30)
+        pdf.set_font('Roboto', '', 12)
+        pdf.multi_cell(0,txt=words,markdown=True,align="J")
 
     return bytes(pdf.output())
 
@@ -99,10 +126,10 @@ def create_path_for_uploaded_file(uploaded_file):
     return temp_file_path
 
 @st.experimental_fragment
-def show_download_pdf_button(label,file_name,response,uploaded_file):
+def show_download_pdf_button(label,file_name,download_pdf_ad_creatives_responses):
     st.download_button(
         label=label,
-        data=write_to_pdf(response,uploaded_file),
+        data=write_to_pdf(download_pdf_ad_creatives_responses),
         file_name=file_name,
         mime="application/octet-stream",
         type="primary",
@@ -174,6 +201,9 @@ st.html(
     color: white;
     background-color: blue;
 }
+[data-testid="stFileDropzoneInstructions"] {
+    content: "xxxxxx";
+}
 [data-testid="stWidgetLabel"] {
     color: white;
     background-color: blue;
@@ -188,15 +218,9 @@ with st.sidebar:
     with st.form("inputs", border=False):
         #st.divider()
         st.write("")
-        uploaded_file = st.file_uploader("Upload an Ad Creative", type=["jpg", "jpeg", "png","mp4"])
-        
-        uploaded_file_type = ""
-        image = ""
-        video_bytes = ""
-        if uploaded_file is not None:
-            uploaded_file_type = ((uploaded_file.type).split("/"))[0]
-            if uploaded_file_type == "image":
-                image = Image.open(uploaded_file)
+        uploaded_files = st.file_uploader("Upload upto 5 Ad Creatives", type=["jpg", "jpeg", "png","mp4"],
+                                         accept_multiple_files=True
+                                         )
         
         #with st.expander("Advanced Settings"):
         advertising_channel = st.selectbox("Advertising Channel",("Facebook", "Instagram", "Google", "Tiktok", "Snapchat"),index=None,
@@ -219,6 +243,14 @@ with placeholder.container():
     st.header("How to use this app?")
     st.write("In the sidebar to the left, upload your ad creative, add a few details and\
           press 'Analyse Ad Creative'. The app will generate insights on your ad creative and then provide recommendations")
+    
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write(":red[*Please note that while the recommendations provided by this app are not guaranteed to be 100% accurate,\
+              they serve as valuable tools for generating ideas and insights.\
+              Always use your judgment before making any decision based on the generated recommendations.\
+              Please feel free to reach out to dane@mcsaatchiperformance.com for any required help or queries]")
 
 advertising_channel_prompt = ''
 if advertising_channel is not None or advertising_channel != '':
@@ -239,11 +271,13 @@ input_prompt = """
 
 ## Define behaviour when Analyse button is clicked
 if submit:
-    if uploaded_file is None or advertising_channel is None or advertising_channel == "" or device is None or device == "":
+    if uploaded_files is None or len(uploaded_files)>5 or advertising_channel is None or advertising_channel == "" or device is None or device == "":
         placeholder.empty()
         sleep(0.5)
-        if uploaded_file is None:
+        if uploaded_files is None:
             placeholder.error("Please upload an Ad Creative to analyse using the 'Browse files' button in the sidebar on the left")
+        if len(uploaded_files)>5:
+            placeholder.error("Please upload less than 5 Ad Creatives to analyse using the 'Browse files' button in the sidebar on the left")
         if advertising_channel is None or advertising_channel == "":
             placeholder.error("Please choose a Advertising Channel from the dropdown in the sidebar on the left")
         if device is None or device == "":
@@ -252,50 +286,66 @@ if submit:
         placeholder.empty()
         sleep(0.5)
         with placeholder.container():
-            with st.spinner('Uploading Ad Creative...'):
-                #Upload ad creative to Gemini
-                path_ad_creative = create_path_for_uploaded_file(uploaded_file)
-                ad_creative_file = [upload_to_gemini(path_ad_creative, mime_type=uploaded_file.type),]
+            row0_col1,row0_col2 = st.columns([0.8,0.2], gap="large")
+            row1 = st.container()
 
-                # Some files have a processing delay. Wait for them to be ready.
-                wait_for_files_active(ad_creative_file)
+            download_pdf_ad_creatives_responses = []
 
-            with st.spinner('Analysing Ad Creative...'):
-                response = ""
-                try:
-                    #Get Response from Gemini
-                    response=get_gemini_response(input_prompt,ad_creative_file)
-                    #Delete file uploaded to Gemini
-                    delete_ad_creative_file_from_gemini(ad_creative_file)
-                    #Delete temporary file
-                    os.remove(path_ad_creative)
-                except Exception as e: 
-                    print(e)
+            with row1:
+                tab_labels = ["Ad Creative {}".format(idx+1) for idx,file in enumerate(uploaded_files)]
+                for tab, enumeration in zip(st.tabs(tab_labels), enumerate(uploaded_files)):
+                    with tab:
+                        i = enumeration[0]
+                        uploaded_file = enumeration[1]
+                        with st.spinner('Uploading Ad Creative {}...'.format(i+1)):
+                            #Upload ad creative to Gemini
+                            path_ad_creative = create_path_for_uploaded_file(uploaded_file)
+                            ad_creative_file = [upload_to_gemini(path_ad_creative, mime_type=uploaded_file.type),]
 
-            st.success("Done!")
+                            # Some files have a processing delay. Wait for them to be ready.
+                            wait_for_files_active(ad_creative_file)
 
-        placeholder.empty()
-        sleep(0.5)
-        with placeholder.container():
-            #row0_col1,row0_col2 = st.columns([0.8,0.2], gap="large")
-            col1, col2= st.columns([0.3,0.7], gap="large")
+                        with st.spinner('Analysing Ad Creative {}...'.format(i+1)):
+                            response = ""
+                            try:
+                                #Get Response from Gemini
+                                response=get_gemini_response(input_prompt,ad_creative_file)
+                                #Delete file uploaded to Gemini
+                                delete_ad_creative_file_from_gemini(ad_creative_file)
+                                #Delete temporary file
+                                os.remove(path_ad_creative)
+                            except Exception as e: 
+                                print(e)
 
-            #with row0_col2:
-            #    show_download_pdf_button("Download PDF","creative_best_practice.pdf",response,uploaded_file)
-                
-            with col1:
-                #Show ad creative on first column of the main page
-                st.header("Ad Creative")
-                st.divider()
-                if uploaded_file_type == "image":
-                    st.image(image, use_column_width=True)
-                elif uploaded_file_type == "video":
-                    st.video(uploaded_file)
-                
-            
-            with col2:
-                #Show Gemini response on second column of the main page
-                st.header("Does the Ad Creative meet best practices?")
-                st.divider()
-                with st.container(height=700,border=False):
-                    st.markdown(response)
+                        ad_creative_response = {
+                            "uploaded_file" : uploaded_file,
+                            "response" : response
+                        }
+
+                        download_pdf_ad_creatives_responses.append(ad_creative_response.copy())
+
+                        col1, col2= st.columns([0.3,0.7], gap="large")
+
+                        with col1:
+                            #Show ad creative on first column of the main page
+                            st.header("Ad Creative")
+                            st.divider()
+                            
+                            uploaded_file_type = ((uploaded_file.type).split("/"))[0]
+
+                            if uploaded_file_type == "image":
+                                image = Image.open(uploaded_file)
+                                st.image(image, use_column_width=True)
+                            elif uploaded_file_type == "video":
+                                st.video(uploaded_file)
+                        
+                    
+                        with col2:
+                            #Show Gemini response on second column of the main page
+                            st.header("Does the Ad Creative meet best practices?")
+                            st.divider()
+                            with st.container(height=700,border=False):
+                                st.markdown(response)
+
+            with row0_col2:
+                show_download_pdf_button("Download PDF","creative_best_practice.pdf",download_pdf_ad_creatives_responses)
