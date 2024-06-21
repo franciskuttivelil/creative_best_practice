@@ -225,10 +225,11 @@ with st.sidebar:
                                          )
         
         #with st.expander("Advanced Settings"):
-        advertising_channel = st.selectbox("Advertising Channel",("Facebook", "Instagram", "Google", "Tiktok", "Snapchat"),index=None,
+        advertising_channel = st.selectbox("Advertising Channel",("Facebook", "Instagram", "Google Display", "YouTube", 
+                                                                  "Tiktok", "Snapchat"),index=None,
                                            placeholder="Select advertising channel...")
-        device = st.selectbox("Device",("Mobile","Desktop"),index=None,
-                              placeholder="Select device...")
+        objective = st.selectbox("Objective",("Brand Awareness","Conversion", "User Acquisition"),index=None,
+                              placeholder="Select objective...")
 
         submit=st.form_submit_button("Analyse Ad Creative",type="primary",use_container_width=True)
 
@@ -245,45 +246,47 @@ with placeholder.container():
     st.header("How to use this app?")
     st.write("In the sidebar to the left, upload your ad creative, add a few details and\
           press 'Analyse Ad Creative'. The app will generate insights on your ad creative and then provide recommendations")
+    st.header("Contact us")
+    st.write("Send an email to dane.buchanan@mcsaatchiperformance.com if you have any queries or are facing any issues.")
     
     st.write("")
-    st.write("")
-    st.write("")
-    st.write(":red[*Please note that while the recommendations provided by this app are not guaranteed to be 100% accurate,\
-              they serve as valuable tools for generating ideas and insights.\
-              Always use your judgment before making any decision based on the generated recommendations.\
-              Please feel free to reach out to dane@mcsaatchiperformance.com for any required help or queries]")
+    st.write(":red[*This app aids in idea generation. Since, recommendations may not always be 100% accurate,\
+              please use your judgment before implementing them.]")
 
 advertising_channel_prompt = ''
 if advertising_channel is not None or advertising_channel != '':
     advertising_channel_prompt = 'The advertising channel the creative will be served on is {}.'.format(advertising_channel)
 
-device_prompt = ''
-if device is not None or device != '':
-    device_prompt = 'The device the creative will be served on is {}.'.format(device)
+objective_prompt = ''
+if objective is not None or objective != '':
+    objective_prompt = 'The objective of the the ad campaign the creative will used in is {}.'.format(objective)
 
 input_prompt = """
                I am marketing analyst. I want to make sure that the ad creatives I use are meeting best practices. 
-               Please analyse the ad creative to see if meets best practices like size of logo, actionable call to action etc.
+               Please analyse the ad creative to see if it meets best practices like size of logo, actionable call to action etc.
                {}{}
-               Please score the creative out of 100. The score should be in percentage
-               Please include in the response an introduction, creative score, the creative's strengths, areas to improve, recommendations on how to improve it, general best practices and conclusion.
+               Please include in the response the creative's strengths and areas to improve for the advertising channel and objective.
                Please find the creative attached
-               """.format(advertising_channel_prompt,device_prompt)
+               """.format(advertising_channel_prompt,objective_prompt)
+               #introduction, creative score,recommendations on how to improve it, general best practices,size recommendations and conclusion
+               #Please score the creative out of 100. The score should be in percentage. 
+               #If the score is above 70 then say its ready to be used, if the score is between 50-70 then say it needs revisions 
+               #and if the score is below 50 then say do not use the ad creative
 
 ## Define behaviour when Analyse button is clicked
 if submit:
-    if uploaded_files is None or len(uploaded_files)>5 or advertising_channel is None or advertising_channel == "" or device is None or device == "":
+    print(uploaded_files)
+    if uploaded_files is None or uploaded_files == "" or not uploaded_files or len(uploaded_files)>5 or advertising_channel is None or advertising_channel == "" or objective is None or objective == "":
         placeholder.empty()
         sleep(0.5)
-        if uploaded_files is None:
+        if uploaded_files is None or uploaded_files == "" or not uploaded_files:
             placeholder.error("Please upload an Ad Creative to analyse using the 'Browse files' button in the sidebar on the left")
         if len(uploaded_files)>5:
             placeholder.error("Please upload less than 5 Ad Creatives to analyse using the 'Browse files' button in the sidebar on the left")
         if advertising_channel is None or advertising_channel == "":
             placeholder.error("Please choose a Advertising Channel from the dropdown in the sidebar on the left")
-        if device is None or device == "":
-            placeholder.error("Please choose a Device from the dropdown in the sidebar on the left")
+        if objective is None or objective == "":
+            placeholder.error("Please choose an Objective from the dropdown in the sidebar on the left")
     else:
         placeholder.empty()
         sleep(0.5)
@@ -349,5 +352,5 @@ if submit:
                             with st.container(height=700,border=False):
                                 st.markdown(response)
 
-            with row0_col2:
-                show_download_pdf_button("Download PDF","creative_best_practice.pdf",download_pdf_ad_creatives_responses)
+            #with row0_col2:
+            #    show_download_pdf_button("Download PDF","creative_best_practice.pdf",download_pdf_ad_creatives_responses)
