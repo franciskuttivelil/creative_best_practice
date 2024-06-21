@@ -228,7 +228,7 @@ with st.sidebar:
         advertising_channel = st.selectbox("Advertising Channel",("Facebook", "Instagram", "Google Display", "YouTube", 
                                                                   "Tiktok", "Snapchat"),index=None,
                                            placeholder="Select advertising channel...")
-        objective = st.selectbox("Objective",("Brand Awareness","Conversion", "User Acquisition"),index=None,
+        objective = st.selectbox("Objective",("Brand Awareness","Conversions", "User Acquisition"),index=None,
                               placeholder="Select objective...")
 
         submit=st.form_submit_button("Analyse Ad Creative",type="primary",use_container_width=True)
@@ -265,7 +265,7 @@ input_prompt = """
                I am marketing analyst. I want to make sure that the ad creatives I use are meeting best practices. 
                Please analyse the ad creative to see if it meets best practices like size of logo, actionable call to action etc.
                {}{}
-               Please include in the response the creative's strengths and areas to improve for the advertising channel and objective.
+               Please include in the response the creative's strengths, areas to improve and size recommendations for the advertising channel and objective.
                Please find the creative attached
                """.format(advertising_channel_prompt,objective_prompt)
                #introduction, creative score,recommendations on how to improve it, general best practices,size recommendations and conclusion
